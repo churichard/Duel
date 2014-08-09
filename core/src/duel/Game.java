@@ -243,14 +243,16 @@ public class Game extends ApplicationAdapter {
 		for (int i = 0; i < stage.length; i += 4) {
 			if (vel < 0 && mainChar.x >= stage[i] && mainChar.x <= stage[i + 1] && mainChar.y > stage[i + 2]
 					&& mainChar.y < stage[i + 3]) {
-				isJumping = false;
-				isFalling = false;
-				onPlatform = true;
-				platformNum = i / 4;
-				vel = initVel;
-				mainChar.y = stage[i + 2] + 10;
-				sword.y = stage[i + 2] + 10 + 40;
-				gun.y = stage[i + 2] + 10 + 40;
+				if (platformNum == i/4 && !isFalling || platformNum != i/4) {
+					isJumping = false;
+					isFalling = false;
+					onPlatform = true;
+					platformNum = i / 4;
+					vel = initVel;
+					mainChar.y = stage[i + 2] + 10;
+					sword.y = stage[i + 2] + 10 + 40;
+					gun.y = stage[i + 2] + 10 + 40;
+				}
 			}
 		}
 		// Checking to see if the character is falling
@@ -259,7 +261,12 @@ public class Game extends ApplicationAdapter {
 			onPlatform = false;
 			isFalling = true;
 			vel = 0;
-			platformNum = -1;
+		}
+		// Checking to see if the character is dropping
+		if (onPlatform && !isJumping && Gdx.input.isKeyPressed(Input.Keys.S)) {
+			onPlatform = false;
+			isFalling = true;
+			vel = 0;
 		}
 	}
 	
