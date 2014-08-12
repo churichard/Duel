@@ -19,58 +19,23 @@ public class Game extends ApplicationAdapter {
 	Texture greenery;
 	SpriteBatch spriteBatch;
 	
-	// Main character
-	Animator mainChar;
-	final int mainCharInitX = 50;
-	final int mainCharInitY = 150;
-	
-	boolean facingRight = true;
-	boolean isJumping = false;
-	boolean isFalling = false;
-	boolean onPlatform = false;
-	
-	final int accel = 2;
-	final int initVel = 24;
-	int vel = initVel;
+	// Characters
+	Character[] chars = new Character[1];
+	Character currChar;
 	
 	// Platforms
 	HashMap<String, int[]> platCoord = new HashMap<String, int[]>();
-	int platformNum;
 	
-	// Weapon switching
-	boolean meleeOn = true;
-	
-	// Melee
-	Animator sword;
-	boolean meleeSwing;
-	final int swordInitX = mainCharInitX + 40;
-	final int swordInitY = mainCharInitY + 37;
-	
-	// Guns
-	Animator gun;
-	final int gunInitX = mainCharInitX + 46;
-	final int gunInitY = mainCharInitY + 40;
-	
-	// Bullets
-	ArrayList<Animator> bullet = new ArrayList<Animator>();
-	
-	long bulletPrevTime = 999999999; // The time that the previous bullet was shot at
-	long swordPrevTime = 999999999; // The time that the sword was last swung
-	long weaponPrevTime = 999999999; // The time that the weapon was last switched
+	// Acceleration and velocity
+	final int accel = 2;
+	final int initVel = 26;
+	int vel = initVel;
 	
 	@Override
 	public void create() {
-		// Create main character animations
-		mainChar = new Animator("assets/MainChar.png", mainCharInitX, mainCharInitY, 7, 0, 8, 4, 0.0625f);
-		mainChar.create();
-		
-		// Create gun animations
-		gun = new Animator("assets/Gun.png", gunInitX, gunInitY, 7, 0, 2, 1, 0.0625f);
-		gun.create();
-		
-		// Create sword
-		sword = new Animator("assets/Sword.png", swordInitX, swordInitY, 7, 0, 6, 4, 0.02f);
-		sword.create();
+		// Create characters
+		// charRef, initX, initY, xDisp, yDisp, rows, cols, animSpeed, meleeRef, gunRef
+		chars[0] = new Character("mainChar", 50, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
 		
 		// Create backgrounds
 		spriteBatch = new SpriteBatch();
@@ -88,30 +53,36 @@ public class Game extends ApplicationAdapter {
 	public void render() {
 		// Renders background
 		renderBackground();
-		// Check bounds
-		checkBounds();
-		// Handles platforms
-		handlePlatforms();
 		
-		// Renders main character movement
-		renderMovement();
-		// Handles main character jumps and falls
-		handleAirtime();
-		
-		// Handles weapon switching
-		handleWeapons();
-		
-		// Renders bullet
-		renderBullet();
-		
-		if (meleeOn) {
-			// Renders melee animation
-			renderMeleeAnimation();
-		} else {
-			// Renders gun
-			renderGun();
-			// Renders gun firing
-			handleGunFiring();
+		for (Character c : chars) {
+			// Setting current character
+			currChar = c;
+			
+			// Check bounds
+			checkBounds();
+			// Handles platforms
+			handlePlatforms();
+			
+			// Renders main character movement
+			renderMovement();
+			// Handles main character jumps and falls
+			handleAirtime();
+			
+			// Handles weapon switching
+			handleWeapons();
+			
+			// Renders bullet
+			renderBullet();
+			
+			if (currChar.meleeOn) {
+				// Renders melee animation
+				renderMeleeAnimation();
+			} else {
+				// Renders gun
+				renderGun();
+				// Renders gun firing
+				handleGunFiring();
+			}
 		}
 	}
 	
@@ -125,32 +96,34 @@ public class Game extends ApplicationAdapter {
 	// Checks that the characters are within the bounds
 	public void checkBounds() {
 		// For main character
-		if (mainChar.x < -29)
-			mainChar.x = -29;
-		if (mainChar.x > 899)
-			mainChar.x = 899;
-		if (mainChar.y < mainCharInitY)
-			mainChar.y = mainCharInitY;
-		if (mainChar.y > 550)
-			mainChar.y = 550;
+		if (currChar.x < -29)
+			currChar.x = -29;
+		if (currChar.x > 899)
+			currChar.x = 899;
+		if (currChar.y < currChar.initY)
+			currChar.y = currChar.initY;
+		if (currChar.y > 550)
+			currChar.y = 550;
 		
-		if (sword.x < -50)
-			sword.x = -50;
-		if (sword.x > 939)
-			sword.x = 939;
-		if (sword.y <= swordInitX)
-			sword.y = swordInitY;
-		if (sword.y >= 570)
-			sword.y = 570;
+		// For melee weapon
+		if (currChar.melee.x < -50)
+			currChar.melee.x = -50;
+		if (currChar.melee.x > 939)
+			currChar.melee.x = 939;
+		if (currChar.melee.y <= currChar.melee.initY)
+			currChar.melee.y = currChar.melee.initY;
+		if (currChar.melee.y >= 570)
+			currChar.melee.y = 570;
 		
-		if (gun.x < -29)
-			gun.x = -29;
-		if (gun.x > 945)
-			gun.x = 945;
-		if (gun.y <= gunInitY)
-			gun.y = gunInitY;
-		if (gun.y >= 570)
-			gun.y = 570;
+		// For gun
+		if (currChar.gun.x < -29)
+			currChar.gun.x = -29;
+		if (currChar.gun.x > 945)
+			currChar.gun.x = 945;
+		if (currChar.gun.y <= currChar.gun.initY)
+			currChar.gun.y = currChar.gun.initY;
+		if (currChar.gun.y >= 570)
+			currChar.gun.y = 570;
 	}
 	
 	// Renders main character movement
@@ -159,79 +132,70 @@ public class Game extends ApplicationAdapter {
 		// Go right
 		if (Gdx.input.isKeyPressed(Input.Keys.D)) {
 			// If you just turned right
-			if (!facingRight) {
-				facingRight = true;
-				sword.x += 61;
-				gun.x += 46;
+			if (!currChar.facingRight) {
+				currChar.facingRight = true;
+				currChar.melee.x += 61;
+				currChar.gun.x += 46;
 			}
 			// Moves the player and the gun
-			mainChar.x += mainChar.xDisp;
-			sword.x += sword.xDisp;
-			gun.x += gun.xDisp;
+			currChar.x += currChar.xDisp;
+			currChar.melee.x += currChar.xDisp;
+			currChar.gun.x += currChar.xDisp;
 			// Checks the boundaries
 			checkBounds();
 			// If the player is on the ground/platform, then show running animation
-			if (mainChar.y == mainCharInitY || onPlatform) {
-				mainChar.renderRight();
+			if (currChar.y == currChar.initY || currChar.onPlatform) {
+				currChar.anim.renderAnimRight();
 			} else {
-				renderMainChar();
+				renderChar();
 			}
 		}
 		// Go left
 		else if (Gdx.input.isKeyPressed(Input.Keys.A)) {
 			// If you just turned left
-			if (facingRight) {
-				facingRight = false;
-				sword.x -= 61;
-				gun.x -= 46;
+			if (currChar.facingRight) {
+				currChar.facingRight = false;
+				currChar.melee.x -= 61;
+				currChar.gun.x -= 46;
 			}
 			// Moves the player and the gun
-			mainChar.x += -1 * mainChar.xDisp;
-			sword.x += -1 * sword.xDisp;
-			gun.x += -1 * gun.xDisp;
+			currChar.x += -1 * currChar.xDisp;
+			currChar.melee.x += -1 * currChar.xDisp;
+			currChar.gun.x += -1 * currChar.xDisp;
 			// Checks the boundaries
 			checkBounds();
 			// If the player is on the ground/platform, then show running animation
-			if (mainChar.y == mainCharInitY || onPlatform) {
-				mainChar.renderLeft();
+			if (currChar.y == currChar.initY || currChar.onPlatform) {
+				currChar.anim.renderAnimLeft();
 			} else {
-				renderMainChar();
+				renderChar();
 			}
 		} else {
-			renderMainChar();
+			renderChar();
 		}
 	}
 	
 	// Handles jumps and falls
 	public void handleAirtime() {
 		//Jumping
-		if (!isJumping && !isFalling && Gdx.input.isKeyPressed(Input.Keys.SPACE) || !isJumping && !isFalling
+		if (!currChar.isJumping && !currChar.isFalling && Gdx.input.isKeyPressed(Input.Keys.SPACE) || !currChar.isJumping && !currChar.isFalling
 				&& Gdx.input.isKeyPressed(Input.Keys.W)) {
-			isJumping = true;
-			mainChar.y += vel;
-			sword.y += vel;
-			gun.y += vel;
+			currChar.isJumping = true;
+			currChar.y += vel;
+			currChar.melee.y += vel;
+			currChar.gun.y += vel;
 			vel -= accel;
 		}
-		if (isJumping && !isFalling) {
-			if (mainChar.y > mainCharInitY) {
-				mainChar.y += vel;
-				sword.y += vel;
-				gun.y += vel;
+		// Checking to see if the character is jumping or falling
+		if (currChar.isJumping || currChar.isFalling) {
+			if (currChar.y > currChar.initY) {
 				vel -= accel;
+				currChar.y += vel;
+				currChar.melee.y += vel;
+				currChar.gun.y += vel;
 			} else {
-				isJumping = false;
-				vel = initVel;
-			}
-		}
-		if (isFalling && !isJumping) {
-			if (mainChar.y > mainCharInitY) {
-				vel -= accel;
-				mainChar.y += vel;
-				sword.y += vel;
-				gun.y += vel;
-			} else {
-				isFalling = false;
+				currChar.isJumping = false;
+				currChar.isFalling = false;
 				vel = initVel;
 			}
 		}
@@ -241,87 +205,79 @@ public class Game extends ApplicationAdapter {
 	public void handlePlatforms() {
 		// Iterate over each platform
 		for (int i = 0; i < stage.length; i += 4) {
-			if (vel < 0 && mainChar.x >= stage[i] && mainChar.x <= stage[i + 1] && mainChar.y > stage[i + 2]
-					&& mainChar.y < stage[i + 3]) {
-				if (platformNum == i/4 && !isFalling || platformNum != i/4) {
-					isJumping = false;
-					isFalling = false;
-					onPlatform = true;
-					platformNum = i / 4;
+			if (vel < 0 && currChar.x >= stage[i] && currChar.x <= stage[i + 1] && currChar.y > stage[i + 2]
+					&& currChar.y < stage[i + 3]) {
+				if (currChar.platformNum == i / 4 && !currChar.isFalling || currChar.platformNum != i / 4) {
+					currChar.isJumping = false;
+					currChar.isFalling = false;
+					currChar.onPlatform = true;
+					currChar.platformNum = i / 4;
 					vel = initVel;
-					mainChar.y = stage[i + 2] + 10;
-					sword.y = stage[i + 2] + 10 + 40;
-					gun.y = stage[i + 2] + 10 + 40;
+					currChar.y = stage[i + 2] + 10;
+					currChar.melee.y = stage[i + 2] + 10 + 40;
+					currChar.gun.y = stage[i + 2] + 10 + 40;
 				}
 			}
 		}
 		// Checking to see if the character is falling
-		if (onPlatform && !isJumping && mainChar.x < stage[4 * platformNum] || onPlatform && !isJumping
-				&& mainChar.x > stage[4 * platformNum + 1]) {
-			onPlatform = false;
-			isFalling = true;
+		if (currChar.onPlatform && !currChar.isJumping && currChar.x < stage[4 * currChar.platformNum] || currChar.onPlatform && !currChar.isJumping
+				&& currChar.x > stage[4 * currChar.platformNum + 1]) {
+			currChar.onPlatform = false;
+			currChar.isFalling = true;
 			vel = 0;
 		}
 		// Checking to see if the character is dropping
-		if (onPlatform && !isJumping && Gdx.input.isKeyPressed(Input.Keys.S)) {
-			onPlatform = false;
-			isFalling = true;
+		if (currChar.onPlatform && !currChar.isJumping && Gdx.input.isKeyPressed(Input.Keys.S)) {
+			currChar.onPlatform = false;
+			currChar.isFalling = true;
 			vel = 0;
 		}
 	}
 	
 	// Handles weapon switching
 	public void handleWeapons() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT) && (TimeUtils.millis() - weaponPrevTime) > 300) {
-			weaponPrevTime = TimeUtils.millis();
-			if (meleeOn)
-				meleeOn = false;
+		if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT) && (TimeUtils.millis() - currChar.weaponPrevTime) > 300) {
+			currChar.weaponPrevTime = TimeUtils.millis();
+			if (currChar.meleeOn)
+				currChar.meleeOn = false;
 			else
-				meleeOn = true;
+				currChar.meleeOn = true;
 		}
 	}
 	
-	// Render static main character
-	public void renderMainChar() {
-		if (facingRight) {
-			mainChar.spriteBatch.begin();
-			mainChar.spriteBatch.draw(mainChar.walkRightFrames[0], mainChar.x, mainChar.y);
-			mainChar.spriteBatch.end();
+	// Render static character
+	public void renderChar() {
+		if (currChar.facingRight) {
+			currChar.anim.renderStaticRight();
 		} else {
-			mainChar.spriteBatch.begin();
-			mainChar.spriteBatch.draw(mainChar.walkLeftFrames[0], mainChar.x, mainChar.y);
-			mainChar.spriteBatch.end();
+			currChar.anim.renderStaticLeft();
 		}
 	}
 	
 	// Renders melee weapon
 	public void renderMelee() {
-		if (facingRight) {
-			sword.spriteBatch.begin();
-			sword.spriteBatch.draw(sword.walkRightFrames[0], sword.x, sword.y);
-			sword.spriteBatch.end();
+		if (currChar.facingRight) {
+			currChar.melee.anim.renderStaticRight();
 		} else {
-			sword.spriteBatch.begin();
-			sword.spriteBatch.draw(sword.walkLeftFrames[0], sword.x, sword.y);
-			sword.spriteBatch.end();
+			currChar.melee.anim.renderStaticLeft();
 		}
 	}
 	
 	// Renders melee weapon animation
 	public void renderMeleeAnimation() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - swordPrevTime) > 150) {
-			meleeSwing = true;
-			swordPrevTime = TimeUtils.millis();
+		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - currChar.swordPrevTime) > 150) {
+			currChar.meleeSwing = true;
+			currChar.swordPrevTime = TimeUtils.millis();
 		}
-		if (meleeSwing) {
-			if (facingRight) {
-				sword.renderRight();
+		if (currChar.meleeSwing) {
+			if (currChar.facingRight) {
+				currChar.melee.anim.renderAnimRight();
 			} else {
-				sword.renderLeft();
+				currChar.melee.anim.renderAnimLeft();
 			}
-			if (sword.currentFrame == sword.walkRightFrames[0]
-					|| sword.currentFrame == sword.walkLeftFrames[0]) {
-				meleeSwing = false;
+			if (currChar.melee.anim.currentFrame == currChar.melee.anim.rightFrames[0]
+					|| currChar.melee.anim.currentFrame == currChar.melee.anim.leftFrames[0]) {
+				currChar.meleeSwing = false;
 			}
 		} else {
 			// Renders melee weapon
@@ -331,50 +287,43 @@ public class Game extends ApplicationAdapter {
 	
 	// Render static gun
 	public void renderGun() {
-		if (facingRight) {
-			gun.spriteBatch.begin();
-			gun.spriteBatch.draw(gun.walkRightFrames[0], gun.x, gun.y);
-			gun.spriteBatch.end();
+		if (currChar.facingRight) {
+			currChar.gun.anim.renderStaticRight();
 		} else {
-			gun.spriteBatch.begin();
-			gun.spriteBatch.draw(gun.walkLeftFrames[0], gun.x, gun.y);
-			gun.spriteBatch.end();
+			currChar.gun.anim.renderStaticLeft();
 		}
 	}
 	
 	// Handles gun firing
 	public void handleGunFiring() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - bulletPrevTime) > 300) {
+		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - currChar.bulletPrevTime) > 300) {
 			// Create bullets
-			if (facingRight) {
-				bullet.add(new Animator("assets/Bullet.png", gun.x + 46, gun.y + 15, 10, 0, 1, 1, 0.0625f));
+			if (currChar.facingRight) {
+				currChar.addBullet(46, 15, 10, 0);
 			} else {
-				bullet.add(new Animator("assets/Bullet.png", gun.x - 46, gun.y + 15, -10, 0, 1, 1, 0.0625f));
+				currChar.addBullet(-18, 15, -10, 0);
 			}
-			bullet.get(bullet.size() - 1).create();
 			// Update the time that the bullet shot at
-			bulletPrevTime = TimeUtils.millis();
+			currChar.bulletPrevTime = TimeUtils.millis();
 		}
 	}
 	
 	// Render bullet
 	public void renderBullet() {
 		// ArrayList of bullets to be removed
-		ArrayList<Animator> removeBullet = new ArrayList<Animator>();
+		ArrayList<Bullet> removeBullets = new ArrayList<Bullet>();
 		// Render each bullet
-		for (int i = 0; i < bullet.size(); i++) {
-			bullet.get(i).spriteBatch.begin();
-			bullet.get(i).spriteBatch.draw(bullet.get(i).walkSheet, bullet.get(i).x, bullet.get(i).y);
-			bullet.get(i).spriteBatch.end();
-			bullet.get(i).x += bullet.get(i).xDisp;
-			bullet.get(i).y += bullet.get(i).yDisp;
-			if (bullet.get(i).x > 1000 || bullet.get(i).x < -50) {
-				removeBullet.add(bullet.get(i));
+		for (int i = 0; i < currChar.bullets.size(); i++) {
+			currChar.bullets.get(i).anim.renderStaticRight();
+			currChar.bullets.get(i).x += currChar.bullets.get(i).xDisp;
+			currChar.bullets.get(i).y += currChar.bullets.get(i).yDisp;
+			if (currChar.bullets.get(i).x > 1000 || currChar.bullets.get(i).x < -50) {
+				removeBullets.add(currChar.bullets.get(i));
 			}
 		}
 		// Remove the bullets that are off the screen
-		for (int i = 0; i < removeBullet.size(); i++) {
-			bullet.remove(removeBullet.get(i));
+		for (int i = 0; i < removeBullets.size(); i++) {
+			currChar.bullets.remove(removeBullets.get(i));
 		}
 	}
 }
