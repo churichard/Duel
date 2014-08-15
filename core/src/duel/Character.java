@@ -24,10 +24,15 @@ public class Character extends Entity {
 	// Weapon switching
 	boolean meleeOn = true;
 	
+	// Acceleration and velocity
+	final int accel = 2;
+	final int initVel = 26;
+	int vel = initVel;
+	
 	// Timers
-	long bulletPrevTime = 999999999; // The time that the previous bullet was shot at
-	long swordPrevTime = 999999999; // The time that the sword was last swung
-	long weaponPrevTime = 999999999; // The time that the weapon was last switched
+	long bulletPrevTime = 0; // The time that the previous bullet was shot at
+	long swordPrevTime = 0; // The time that the sword was last swung
+	long weaponPrevTime = 0; // The time that the weapon was last switched
 	
 	// Initializes a new character
 	public Character(String charRef, int initX, int initY, int xDisp, int yDisp, int rows, int cols,

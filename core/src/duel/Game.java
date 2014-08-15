@@ -20,22 +20,18 @@ public class Game extends ApplicationAdapter {
 	SpriteBatch spriteBatch;
 	
 	// Characters
-	Character[] chars = new Character[1];
+	Character[] chars = new Character[2];
 	Character currChar;
 	
 	// Platforms
 	HashMap<String, int[]> platCoord = new HashMap<String, int[]>();
-	
-	// Acceleration and velocity
-	final int accel = 2;
-	final int initVel = 26;
-	int vel = initVel;
 	
 	@Override
 	public void create() {
 		// Create characters
 		// charRef, initX, initY, xDisp, yDisp, rows, cols, animSpeed, meleeRef, gunRef
 		chars[0] = new Character("mainChar", 50, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
+		chars[1] = new Character("mainChar2", 200, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
 		
 		// Create backgrounds
 		spriteBatch = new SpriteBatch();
@@ -130,7 +126,8 @@ public class Game extends ApplicationAdapter {
 	public void renderMovement() {
 		// Animate main character
 		// Go right
-		if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+		if (Gdx.input.isKeyPressed(Input.Keys.D) && currChar == chars[0]
+				|| Gdx.input.isKeyPressed(Input.Keys.DPAD_RIGHT) && currChar == chars[1]) {
 			// If you just turned right
 			if (!currChar.facingRight) {
 				currChar.facingRight = true;
@@ -151,7 +148,8 @@ public class Game extends ApplicationAdapter {
 			}
 		}
 		// Go left
-		else if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+		else if (Gdx.input.isKeyPressed(Input.Keys.A) && currChar == chars[0]
+				|| Gdx.input.isKeyPressed(Input.Keys.DPAD_LEFT) && currChar == chars[1]) {
 			// If you just turned left
 			if (currChar.facingRight) {
 				currChar.facingRight = false;
@@ -178,25 +176,26 @@ public class Game extends ApplicationAdapter {
 	// Handles jumps and falls
 	public void handleAirtime() {
 		//Jumping
-		if (!currChar.isJumping && !currChar.isFalling && Gdx.input.isKeyPressed(Input.Keys.SPACE) || !currChar.isJumping && !currChar.isFalling
-				&& Gdx.input.isKeyPressed(Input.Keys.W)) {
+		if (!currChar.isJumping && !currChar.isFalling && Gdx.input.isKeyPressed(Input.Keys.W)
+				&& currChar == chars[0] || !currChar.isJumping && !currChar.isFalling
+				&& Gdx.input.isKeyPressed(Input.Keys.DPAD_UP) && currChar == chars[1]) {
 			currChar.isJumping = true;
-			currChar.y += vel;
-			currChar.melee.y += vel;
-			currChar.gun.y += vel;
-			vel -= accel;
+			currChar.y += currChar.vel;
+			currChar.melee.y += currChar.vel;
+			currChar.gun.y += currChar.vel;
+			currChar.vel -= currChar.accel;
 		}
 		// Checking to see if the character is jumping or falling
 		if (currChar.isJumping || currChar.isFalling) {
 			if (currChar.y > currChar.initY) {
-				vel -= accel;
-				currChar.y += vel;
-				currChar.melee.y += vel;
-				currChar.gun.y += vel;
+				currChar.vel -= currChar.accel;
+				currChar.y += currChar.vel;
+				currChar.melee.y += currChar.vel;
+				currChar.gun.y += currChar.vel;
 			} else {
 				currChar.isJumping = false;
 				currChar.isFalling = false;
-				vel = initVel;
+				currChar.vel = currChar.initVel;
 			}
 		}
 	}
@@ -205,14 +204,14 @@ public class Game extends ApplicationAdapter {
 	public void handlePlatforms() {
 		// Iterate over each platform
 		for (int i = 0; i < stage.length; i += 4) {
-			if (vel < 0 && currChar.x >= stage[i] && currChar.x <= stage[i + 1] && currChar.y > stage[i + 2]
-					&& currChar.y < stage[i + 3]) {
+			if (currChar.vel < 0 && currChar.x >= stage[i] && currChar.x <= stage[i + 1]
+					&& currChar.y > stage[i + 2] && currChar.y < stage[i + 3]) {
 				if (currChar.platformNum == i / 4 && !currChar.isFalling || currChar.platformNum != i / 4) {
 					currChar.isJumping = false;
 					currChar.isFalling = false;
 					currChar.onPlatform = true;
 					currChar.platformNum = i / 4;
-					vel = initVel;
+					currChar.vel = currChar.initVel;
 					currChar.y = stage[i + 2] + 10;
 					currChar.melee.y = stage[i + 2] + 10 + 40;
 					currChar.gun.y = stage[i + 2] + 10 + 40;
@@ -220,23 +219,28 @@ public class Game extends ApplicationAdapter {
 			}
 		}
 		// Checking to see if the character is falling
-		if (currChar.onPlatform && !currChar.isJumping && currChar.x < stage[4 * currChar.platformNum] || currChar.onPlatform && !currChar.isJumping
+		if (currChar.onPlatform && !currChar.isJumping && currChar.x < stage[4 * currChar.platformNum]
+				|| currChar.onPlatform && !currChar.isJumping
 				&& currChar.x > stage[4 * currChar.platformNum + 1]) {
 			currChar.onPlatform = false;
 			currChar.isFalling = true;
-			vel = 0;
+			currChar.vel = 0;
 		}
 		// Checking to see if the character is dropping
-		if (currChar.onPlatform && !currChar.isJumping && Gdx.input.isKeyPressed(Input.Keys.S)) {
+		if (currChar.onPlatform && !currChar.isJumping && Gdx.input.isKeyPressed(Input.Keys.S)
+				&& currChar == chars[0] || currChar.onPlatform && !currChar.isJumping
+				&& Gdx.input.isKeyPressed(Input.Keys.DPAD_DOWN) && currChar == chars[1]) {
 			currChar.onPlatform = false;
 			currChar.isFalling = true;
-			vel = 0;
+			currChar.vel = 0;
 		}
 	}
 	
 	// Handles weapon switching
 	public void handleWeapons() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT) && (TimeUtils.millis() - currChar.weaponPrevTime) > 300) {
+		if ((Gdx.input.isKeyPressed(Input.Keys.B) && (TimeUtils.millis() - currChar.weaponPrevTime) > 300 && currChar == chars[0])
+				|| (Gdx.input.isKeyPressed(Input.Keys.LEFT_BRACKET)
+						&& (TimeUtils.millis() - currChar.weaponPrevTime) > 300 && currChar == chars[1])) {
 			currChar.weaponPrevTime = TimeUtils.millis();
 			if (currChar.meleeOn)
 				currChar.meleeOn = false;
@@ -265,7 +269,9 @@ public class Game extends ApplicationAdapter {
 	
 	// Renders melee weapon animation
 	public void renderMeleeAnimation() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - currChar.swordPrevTime) > 150) {
+		if (Gdx.input.isKeyPressed(Input.Keys.V) && (TimeUtils.millis() - currChar.swordPrevTime) > 150
+				&& currChar == chars[0] || Gdx.input.isKeyPressed(Input.Keys.RIGHT_BRACKET)
+				&& (TimeUtils.millis() - currChar.swordPrevTime) > 150 && currChar == chars[1]) {
 			currChar.meleeSwing = true;
 			currChar.swordPrevTime = TimeUtils.millis();
 		}
@@ -296,7 +302,9 @@ public class Game extends ApplicationAdapter {
 	
 	// Handles gun firing
 	public void handleGunFiring() {
-		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && (TimeUtils.millis() - currChar.bulletPrevTime) > 300) {
+		if (Gdx.input.isKeyPressed(Input.Keys.V) && (TimeUtils.millis() - currChar.bulletPrevTime) > 300
+				&& currChar == chars[0] || Gdx.input.isKeyPressed(Input.Keys.RIGHT_BRACKET)
+				&& (TimeUtils.millis() - currChar.bulletPrevTime) > 300 && currChar == chars[1]) {
 			// Create bullets
 			if (currChar.facingRight) {
 				currChar.addBullet(46, 15, 10, 0);
