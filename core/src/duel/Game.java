@@ -18,9 +18,9 @@ public class Game extends ApplicationAdapter {
 	@Override
 	public void create() {
 		// Create characters
-		// charRef, health, initX, initY, xDisp, yDisp, rows, cols, animSpeed, meleeRef, gunRef
-		chars[0] = new Character("mainChar", 1000, 50, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
-		chars[1] = new Character("mainChar2", 1000, 200, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
+		// charRef, health, initX, initY, xDisp, yDisp, rows, cols, animSpeed, facingRight, meleeRef, gunRef
+		chars[0] = new Character("mainChar", 1000, 50, 150, 7, 0, 8, 4, 0.0625f, true, "Sword", "Gun");
+		chars[1] = new Character("mainChar2", 1000, 800, 150, 7, 0, 8, 4, 0.0625f, false, "Sword", "Gun");
 		
 		// Initialize stage
 		stage = new Stage("Greenery");

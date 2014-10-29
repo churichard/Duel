@@ -45,11 +45,12 @@ public class Character extends Entity {
 	
 	// Initializes a new character
 	public Character(String charRef, int health, int initX, int initY, int xDisp, int yDisp, int rows, int cols,
-			float animSpeed, String meleeRef, String gunRef) {
+			float animSpeed, boolean facingRight, String meleeRef, String gunRef) {
 		super(charRef, initX, initY, xDisp, yDisp, rows, cols, animSpeed);
 		
 		// Initialize character attributes
 		this.health = health;
+		this.facingRight = facingRight;
 		boundingRectangle = new Rectangle();
 		
 		// Create melee weapon

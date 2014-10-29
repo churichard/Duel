@@ -9,6 +9,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Render {
     
+    // Constants
+    static final int MELEE_X_DISP = 61;
+    static final int GUN_X_DISP = 46;
+    
     // SpriteBatch
     private static SpriteBatch spriteBatch = new SpriteBatch();
     
@@ -72,8 +76,8 @@ public class Render {
             // If you just turned right
             if (!c.facingRight) {
                 c.facingRight = true;
-                c.melee.x += 61;
-                c.gun.x += 46;
+                c.melee.x += MELEE_X_DISP;
+                c.gun.x += GUN_X_DISP;
             }
             // Moves the player and the gun
             c.x += c.xDisp;
@@ -94,8 +98,8 @@ public class Render {
             // If you just turned left
             if (c.facingRight) {
                 c.facingRight = false;
-                c.melee.x -= 61;
-                c.gun.x -= 46;
+                c.melee.x -= MELEE_X_DISP;
+                c.gun.x -= GUN_X_DISP;
             }
             // Moves the player and the gun
             c.x += -1 * c.xDisp;
