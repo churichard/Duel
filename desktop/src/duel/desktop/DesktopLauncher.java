@@ -8,7 +8,7 @@ import duel.Game;
 public class DesktopLauncher {
 	public static void main(String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.title = "Platformer";
+		config.title = "Duel";
 		config.width = 960;
 		config.height = 640;
 		new LwjglApplication(new Game(), config);

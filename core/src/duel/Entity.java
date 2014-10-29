@@ -25,6 +25,7 @@ public class Entity {
 		createAnim(ref, rows, cols, animSpeed);
 	}
 	
+	// Creates a new Animator object for the entity
 	public void createAnim(String ref, int rows, int cols, float animSpeed){
 		anim = new Animator(this, ref, rows, cols, animSpeed);
 		anim.create();

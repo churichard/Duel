@@ -1,34 +1,19 @@
 package duel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class Game extends ApplicationAdapter {
-	
-	// Game
-	int[] stage; // The stage that the player is playing on
-	
-	// Backgrounds
-	Texture greenery;
-	SpriteBatch spriteBatch;
+    
+    // Stage
+    Stage stage;
 	
 	// Characters
-	Character[] chars = new Character[2];
+	static Character[] chars = new Character[2];
 	Character currChar;
-	
-	// Platforms
-	HashMap<String, int[]> platCoord = new HashMap<String, int[]>();
-	
-	// Font
-	BitmapFont font;
 	
 	@Override
 	public void create() {
@@ -37,38 +22,32 @@ public class Game extends ApplicationAdapter {
 		chars[0] = new Character("mainChar", 1000, 50, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
 		chars[1] = new Character("mainChar2", 1000, 200, 150, 7, 0, 8, 4, 0.0625f, "Sword", "Gun");
 		
-		// Create backgrounds
-		spriteBatch = new SpriteBatch();
-		greenery = new Texture("assets/Greenery.png");
-		
-		// Initialize platform coordinates
-		int[] temp = { 50, 280, 270, 290, 600, 814, 270, 290, 210, 660, 400, 420 };
-		platCoord.put("Greenery", temp);
-		
-		// Initialize the stage that the player is on
-		stage = platCoord.get("Greenery");
+		// Initialize stage
+		stage = new Stage("Greenery");
 		
 		// Initialize font
-		font = new BitmapFont();
-		font.setScale(2);
+		Render.font = new BitmapFont();
+		Render.font.setScale(2);
 	}
 	
 	@Override
 	public void render() {
 		// Renders background
-		renderBackground();
+		stage.renderBackground();
 		
 		for (Character c : chars) {
 			// Setting current character
 			currChar = c;
 			
 			// Check bounds
-			checkBounds();
+			checkBounds(currChar);
+			
+			int[] stagePlats = stage.getStagePlats();
 			// Handles platforms
-			handlePlatforms();
+			handlePlatforms(stagePlats);
 			
 			// Renders main character movement
-			renderMovement();
+			Render.renderMovement(currChar);
 			// Handles main character jumps and falls
 			handleAirtime();
 			
@@ -76,16 +55,16 @@ public class Game extends ApplicationAdapter {
 			handleWeapons();
 			
 			// Renders bullet
-			renderBullet();
+			Render.renderBullets(currChar);
 			
 			// Renders melee
 			if (currChar.meleeOn) {
 				// Renders melee animation
-				renderMeleeAnimation();
+				Render.renderMeleeAnimation(currChar);
 			} else {
 				// Renders gun
-				renderGun();
-				// Renders gun firing
+				Render.renderGun(currChar);
+				// Handles gun firing
 				handleGunFiring();
 			}
 			
@@ -96,100 +75,127 @@ public class Game extends ApplicationAdapter {
 			updateBoundingRectangles();
 		}
 		
-		// Draws text
-		drawText();
-	}
-	
-	// Renders the background
-	public void renderBackground() {
-		spriteBatch.begin();
-		spriteBatch.draw(greenery, 0, 0);
-		spriteBatch.end();
+		// Draws the GUI
+		Render.drawGUI();
 	}
 	
 	// Checks that the characters are within the bounds
-	public void checkBounds() {
+	public static void checkBounds(Character c) {
 		// For main character
-		if (currChar.x < -29)
-			currChar.x = -29;
-		if (currChar.x > 899)
-			currChar.x = 899;
-		if (currChar.y < currChar.initY)
-			currChar.y = currChar.initY;
-		if (currChar.y > 550)
-			currChar.y = 550;
+		if (c.x < -29)
+			c.x = -29;
+		if (c.x > 899)
+			c.x = 899;
+		if (c.y < c.initY)
+			c.y = c.initY;
+		if (c.y > 550)
+			c.y = 550;
 		
 		// For melee weapon
-		if (currChar.melee.x < -50)
-			currChar.melee.x = -50;
-		if (currChar.melee.x > 939)
-			currChar.melee.x = 939;
-		if (currChar.melee.y <= currChar.melee.initY)
-			currChar.melee.y = currChar.melee.initY;
-		if (currChar.melee.y >= 570)
-			currChar.melee.y = 570;
+		if (c.melee.x < -50)
+			c.melee.x = -50;
+		if (c.melee.x > 939)
+			c.melee.x = 939;
+		if (c.melee.y <= c.melee.initY)
+			c.melee.y = c.melee.initY;
+		if (c.melee.y >= 570)
+			c.melee.y = 570;
 		
 		// For gun
-		if (currChar.gun.x < -29)
-			currChar.gun.x = -29;
-		if (currChar.gun.x > 945)
-			currChar.gun.x = 945;
-		if (currChar.gun.y <= currChar.gun.initY)
-			currChar.gun.y = currChar.gun.initY;
-		if (currChar.gun.y >= 570)
-			currChar.gun.y = 570;
+		if (c.gun.x < -29)
+			c.gun.x = -29;
+		if (c.gun.x > 945)
+			c.gun.x = 945;
+		if (c.gun.y <= c.gun.initY)
+			c.gun.y = c.gun.initY;
+		if (c.gun.y >= 570)
+			c.gun.y = 570;
 	}
 	
-	// Renders character movement
-	public void renderMovement() {
-		// Animate main character
-		// Go right
-		if (Gdx.input.isKeyPressed(Input.Keys.D) && currChar == chars[0]
-				|| Gdx.input.isKeyPressed(Input.Keys.DPAD_RIGHT) && currChar == chars[1]) {
-			// If you just turned right
-			if (!currChar.facingRight) {
-				currChar.facingRight = true;
-				currChar.melee.x += 61;
-				currChar.gun.x += 46;
-			}
-			// Moves the player and the gun
-			currChar.x += currChar.xDisp;
-			currChar.melee.x += currChar.xDisp;
-			currChar.gun.x += currChar.xDisp;
-			// Checks the boundaries
-			checkBounds();
-			// If the player is on the ground/platform, then show running animation
-			if (currChar.y == currChar.initY || currChar.onPlatform) {
-				currChar.anim.renderAnimRight();
-			} else {
-				renderChar();
-			}
-		}
-		// Go left
-		else if (Gdx.input.isKeyPressed(Input.Keys.A) && currChar == chars[0]
-				|| Gdx.input.isKeyPressed(Input.Keys.DPAD_LEFT) && currChar == chars[1]) {
-			// If you just turned left
-			if (currChar.facingRight) {
-				currChar.facingRight = false;
-				currChar.melee.x -= 61;
-				currChar.gun.x -= 46;
-			}
-			// Moves the player and the gun
-			currChar.x += -1 * currChar.xDisp;
-			currChar.melee.x += -1 * currChar.xDisp;
-			currChar.gun.x += -1 * currChar.xDisp;
-			// Checks the boundaries
-			checkBounds();
-			// If the player is on the ground/platform, then show running animation
-			if (currChar.y == currChar.initY || currChar.onPlatform) {
-				currChar.anim.renderAnimLeft();
-			} else {
-				renderChar();
-			}
-		} else {
-			renderChar();
-		}
-	}
+	// Updates character status
+    public void updateCharacters() {
+        Character otherChar;
+        
+        // Sets the other character
+        if (currChar == chars[0]) {
+            otherChar = chars[1];
+        } else {
+            otherChar = chars[0];
+        }
+        
+        // If the other char is hit by a melee swing
+        if (currChar.meleeSwing && currChar.meleeHit == false
+                && currChar.melee.boundingRectangle.overlaps(otherChar.boundingRectangle)) {
+            otherChar.health -= 100;
+            currChar.meleeHit = true;
+        }
+        // If the other char is hit by a bullet
+        for (int i = 0; i < currChar.bullets.size(); i++) {
+            if (currChar.bullets.get(i).boundingRectangle.overlaps(otherChar.boundingRectangle)) {
+                otherChar.health -= 50;
+                currChar.removeBullet(currChar.bullets.get(i));
+            }
+        }
+    }
+    
+    // Updates bounding rectangles
+    public void updateBoundingRectangles() {
+        // Characters and melee weapons
+        if (currChar.facingRight) {
+            currChar.boundingRectangle.set(currChar.x + 30, currChar.y, 50, 90);
+            if (currChar.meleeSwing && currChar.meleeOn)
+                currChar.melee.boundingRectangle.set(currChar.x + 50, currChar.y + 40, 60, 60);
+            else if (currChar.meleeOn)
+                currChar.melee.boundingRectangle.set(currChar.x + 50, currChar.y + 50, 35, 50);
+        } else {
+            currChar.boundingRectangle.set(currChar.x + 10, currChar.y, 50, 90);
+            if (currChar.meleeSwing && currChar.meleeOn)
+                currChar.melee.boundingRectangle.set(currChar.x - 20, currChar.y + 40, 60, 60);
+            else if (currChar.meleeOn)
+                currChar.melee.boundingRectangle.set(currChar.x + 5, currChar.y + 50, 35, 50);
+        }
+        // Bullets
+        for (int i = 0; i < currChar.bullets.size(); i++) {
+            currChar.bullets.get(i).boundingRectangle.set(currChar.bullets.get(i).x - 10, currChar.bullets.get(i).y, 15, 15);
+        }
+    }
+    
+    // Handles platforms
+    public void handlePlatforms(int[] stagePlats) {
+        // Iterate over each platform
+        for (int i = 0; i < stagePlats.length; i += 4) {
+            if (currChar.vel < 0 && currChar.x >= stagePlats[i] && currChar.x <= stagePlats[i + 1]
+                    && currChar.y > stagePlats[i + 2] && currChar.y < stagePlats[i + 3]) {
+                if (currChar.platformNum == i / 4 && !currChar.isFalling || currChar.platformNum != i / 4) {
+                    currChar.isJumping = false;
+                    currChar.isFalling = false;
+                    currChar.onPlatform = true;
+                    currChar.platformNum = i / 4;
+                    currChar.vel = currChar.initVel;
+                    currChar.y = stagePlats[i + 2] + 10;
+                    currChar.boundingRectangle.set(currChar.x, currChar.y, 90, 90);
+                    currChar.melee.y = stagePlats[i + 2] + 10 + 40;
+                    currChar.gun.y = stagePlats[i + 2] + 10 + 40;
+                }
+            }
+        }
+        // Checking to see if the character is falling
+        if (currChar.onPlatform && !currChar.isJumping && currChar.x < stagePlats[4 * currChar.platformNum]
+                || currChar.onPlatform && !currChar.isJumping
+                && currChar.x > stagePlats[4 * currChar.platformNum + 1]) {
+            currChar.onPlatform = false;
+            currChar.isFalling = true;
+            currChar.vel = 0;
+        }
+        // Checking to see if the character is dropping
+        if (currChar.onPlatform && !currChar.isJumping && Gdx.input.isKeyPressed(Input.Keys.S)
+                && currChar == chars[0] || currChar.onPlatform && !currChar.isJumping
+                && Gdx.input.isKeyPressed(Input.Keys.DPAD_DOWN) && currChar == chars[1]) {
+            currChar.onPlatform = false;
+            currChar.isFalling = true;
+            currChar.vel = 0;
+        }
+    }
 	
 	// Handles jumps and falls
 	public void handleAirtime() {
@@ -218,43 +224,6 @@ public class Game extends ApplicationAdapter {
 		}
 	}
 	
-	// Handles platforms
-	public void handlePlatforms() {
-		// Iterate over each platform
-		for (int i = 0; i < stage.length; i += 4) {
-			if (currChar.vel < 0 && currChar.x >= stage[i] && currChar.x <= stage[i + 1]
-					&& currChar.y > stage[i + 2] && currChar.y < stage[i + 3]) {
-				if (currChar.platformNum == i / 4 && !currChar.isFalling || currChar.platformNum != i / 4) {
-					currChar.isJumping = false;
-					currChar.isFalling = false;
-					currChar.onPlatform = true;
-					currChar.platformNum = i / 4;
-					currChar.vel = currChar.initVel;
-					currChar.y = stage[i + 2] + 10;
-					currChar.boundingRectangle.set(currChar.x, currChar.y, 90, 90);
-					currChar.melee.y = stage[i + 2] + 10 + 40;
-					currChar.gun.y = stage[i + 2] + 10 + 40;
-				}
-			}
-		}
-		// Checking to see if the character is falling
-		if (currChar.onPlatform && !currChar.isJumping && currChar.x < stage[4 * currChar.platformNum]
-				|| currChar.onPlatform && !currChar.isJumping
-				&& currChar.x > stage[4 * currChar.platformNum + 1]) {
-			currChar.onPlatform = false;
-			currChar.isFalling = true;
-			currChar.vel = 0;
-		}
-		// Checking to see if the character is dropping
-		if (currChar.onPlatform && !currChar.isJumping && Gdx.input.isKeyPressed(Input.Keys.S)
-				&& currChar == chars[0] || currChar.onPlatform && !currChar.isJumping
-				&& Gdx.input.isKeyPressed(Input.Keys.DPAD_DOWN) && currChar == chars[1]) {
-			currChar.onPlatform = false;
-			currChar.isFalling = true;
-			currChar.vel = 0;
-		}
-	}
-	
 	// Handles weapon switching
 	public void handleWeapons() {
 		if ((Gdx.input.isKeyPressed(Input.Keys.B) && (TimeUtils.millis() - currChar.switchPrevTime) > 300 && currChar == chars[0])
@@ -265,106 +234,6 @@ public class Game extends ApplicationAdapter {
 				currChar.meleeOn = false;
 			else
 				currChar.meleeOn = true;
-		}
-	}
-	
-	// Updates character status
-	public void updateCharacters() {
-		Character otherChar;
-		
-		// Sets the other character
-		if (currChar == chars[0]) {
-			otherChar = chars[1];
-		} else {
-			otherChar = chars[0];
-		}
-		
-		// If the other char is hit by a melee swing
-		if (currChar.meleeSwing && currChar.meleeHit == false
-				&& currChar.melee.boundingRectangle.overlaps(otherChar.boundingRectangle)) {
-			otherChar.health -= 100;
-			currChar.meleeHit = true;
-		}
-		// If the other char is hit by a bullet
-		for (int i = 0; i < currChar.bullets.size(); i++) {
-			if (currChar.bullets.get(i).boundingRectangle.overlaps(otherChar.boundingRectangle)) {
-				otherChar.health -= 50;
-				currChar.removeBullet(currChar.bullets.get(i));
-			}
-		}
-	}
-	
-	// Updates bounding rectangles
-	public void updateBoundingRectangles() {
-		// Characters and melee weapons
-		if (currChar.facingRight) {
-			currChar.boundingRectangle.set(currChar.x + 30, currChar.y, 50, 90);
-			if (currChar.meleeSwing && currChar.meleeOn)
-				currChar.melee.boundingRectangle.set(currChar.x + 50, currChar.y + 40, 60, 60);
-			else if (currChar.meleeOn)
-				currChar.melee.boundingRectangle.set(currChar.x + 50, currChar.y + 50, 35, 50);
-		} else {
-			currChar.boundingRectangle.set(currChar.x + 10, currChar.y, 50, 90);
-			if (currChar.meleeSwing && currChar.meleeOn)
-				currChar.melee.boundingRectangle.set(currChar.x - 20, currChar.y + 40, 60, 60);
-			else if (currChar.meleeOn)
-				currChar.melee.boundingRectangle.set(currChar.x + 5, currChar.y + 50, 35, 50);
-		}
-		// Bullets
-		for (int i = 0; i < currChar.bullets.size(); i++) {
-			currChar.bullets.get(i).boundingRectangle.set(currChar.bullets.get(i).x - 10, currChar.bullets.get(i).y, 15, 15);
-		}
-	}
-	
-	// Render static character
-	public void renderChar() {
-		if (currChar.facingRight) {
-			currChar.anim.renderStaticRight();
-		} else {
-			currChar.anim.renderStaticLeft();
-		}
-	}
-	
-	// Renders melee weapon
-	public void renderMelee() {
-		if (currChar.facingRight) {
-			currChar.melee.anim.renderStaticRight();
-		} else {
-			currChar.melee.anim.renderStaticLeft();
-		}
-	}
-	
-	// Renders melee weapon animation
-	public void renderMeleeAnimation() {
-		if (Gdx.input.isKeyPressed(Input.Keys.V) && currChar == chars[0] && currChar.meleeSwing == false
-				|| Gdx.input.isKeyPressed(Input.Keys.RIGHT_BRACKET) && currChar == chars[1]
-				&& currChar.meleeSwing == false) {
-			currChar.meleeSwing = true;
-			currChar.meleeHit = false;
-			//currChar.swordPrevTime = TimeUtils.millis();
-		}
-		if (currChar.meleeSwing) {
-			if (currChar.facingRight) {
-				currChar.melee.anim.renderAnimRight();
-			} else {
-				currChar.melee.anim.renderAnimLeft();
-			}
-			if (currChar.melee.anim.currentFrame == currChar.melee.anim.rightFrames[0]
-					|| currChar.melee.anim.currentFrame == currChar.melee.anim.leftFrames[0]) {
-				currChar.meleeSwing = false;
-			}
-		} else {
-			// Renders melee weapon
-			renderMelee();
-		}
-	}
-	
-	// Render static gun
-	public void renderGun() {
-		if (currChar.facingRight) {
-			currChar.gun.anim.renderStaticRight();
-		} else {
-			currChar.gun.anim.renderStaticLeft();
 		}
 	}
 	
@@ -382,36 +251,5 @@ public class Game extends ApplicationAdapter {
 			// Update the time that the bullet shot at
 			currChar.bulletPrevTime = TimeUtils.millis();
 		}
-	}
-	
-	// Render bullet
-	public void renderBullet() {
-		// ArrayList of bullets to be removed
-		ArrayList<Bullet> removeBullets = new ArrayList<Bullet>();
-		// Render each bullet
-		for (int i = 0; i < currChar.bullets.size(); i++) {
-			currChar.bullets.get(i).anim.renderStaticRight();
-			currChar.bullets.get(i).x += currChar.bullets.get(i).xDisp;
-			currChar.bullets.get(i).y += currChar.bullets.get(i).yDisp;
-			if (currChar.bullets.get(i).x > 1000 || currChar.bullets.get(i).x < -50) {
-				removeBullets.add(currChar.bullets.get(i));
-			}
-		}
-		// Remove the bullets that are off the screen
-		for (int i = 0; i < removeBullets.size(); i++) {
-			currChar.bullets.remove(removeBullets.get(i));
-		}
-	}
-	
-	// Draws text
-	public void drawText() {
-		spriteBatch.begin();
-		// Draw player 1 health
-		font.draw(spriteBatch, "Player 1", 15, 630);
-		font.draw(spriteBatch, "HP: " + chars[0].health + "/1000", 15, 600);
-		// Draw player 2 health
-		font.draw(spriteBatch, "Player 2", 750, 630);
-		font.draw(spriteBatch, "HP: " + chars[1].health + "/1000", 750, 600);
-		spriteBatch.end();
 	}
 }
